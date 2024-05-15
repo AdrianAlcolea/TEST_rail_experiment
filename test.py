@@ -10,45 +10,37 @@ __maintainer__ = "Adrián Alcolea"
 __license__ = "GPLv3"
 __credits__ = ["Adrián Alcolea"]
 
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+import os
+import json
+import numpy as np
+from model.ge import Ge
 
-def _parse_args():
-    """Analyses the received parameters and returns them organised.
+def main():
     
-    Takes the list of strings received at sys.argv and generates a
-    namespace assigning them to objects.
+    # Load model
+    model = Ge(5)
     
-    Returns
-    -------
-    out : namespace
-        The namespace with the values of the received parameters
-        assigned to objects.
-    """
+    # Get data
+    with open('dataset/data.txt', 'r') as f:
+        data = [int(line) for line in f]
     
-    # Generate the parameter analyser
-    parser = ArgumentParser(description = __doc__,
-                            formatter_class = RawDescriptionHelpFormatter)
+    # Get labels
+    with open('dataset/labels.txt', 'r') as f:
+        labels = [int(line) for line in f]
     
-    # Add arguments
-    parser.add_argument("text",
-                        type=str,
-                        help="Text to print.")
+    # Launch model
+    results = [model.inference(d) for d in data]
     
-    # Return the analysed parameters
-    return parser.parse_args()
-
-# =============================================================================
-
-def main(text):
+    # Save results
+    results_dict = {k: v for k, v in zip(data, results)}
+    output_file = 'output-temp/metrics.json'
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, 'w') as f:
+        json.dump(results_dict, f)
     
-    # Prints the text received as an argument
-    print(text)
-    
+    # Print accuracy
+    acc = (np.array(results) == labels).sum() / len(results)
+    print(f"The accuracy is: {acc*100}%")
 
 if __name__ == "__main__":
-    
-    # Parse args
-    args = _parse_args()
-    
-    # Launch main function
-    main(args.text)
+    main()
